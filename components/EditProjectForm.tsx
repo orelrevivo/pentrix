@@ -140,7 +140,7 @@ export const EditProjectForm: React.FC<EditProjectFormProps> = ({ project, onBac
         body: JSON.stringify({
           ...formData,
           screenshotUrl: JSON.stringify(finalScreenshots),
-          plan: selectedPlan === project.plan ? undefined : undefined,
+          plan: selectedPlan === project.plan ? undefined : (upgradeCost > 0 ? undefined : selectedPlan),
         }),
       });
       const data = await res.json();

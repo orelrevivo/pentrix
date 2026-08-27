@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
-import { projects } from "@/db/schema";
+import { projects, conversations } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(req: Request) {
@@ -14,9 +14,19 @@ export async function GET(req: Request) {
 
     let ownerProjects = [];
     if (isLocal) {
-      ownerProjects = await localDb.projects.findMany((p) => p.ownerId === ownerId);
+      const projs = await localDb.projects.findMany((p) => p.ownerId === ownerId);
+      const convs = await localDb.conversations.findMany((c) => c.status === "accepted");
+      ownerProjects = projs.map((p: any) => {
+        const count = convs.filter((c: any) => c.projectId === p.id).length;
+        return { ...p, feedbackCount: count };
+      });
     } else if (db) {
-      ownerProjects = await db.select().from(projects).where(eq(projects.ownerId, ownerId));
+      const projs = await db.select().from(projects).where(eq(projects.ownerId, ownerId));
+      const convs = await db.select().from(conversations).where(eq(conversations.status, "accepted"));
+      ownerProjects = projs.map((p: any) => {
+        const count = convs.filter((c: any) => c.projectId === p.id).length;
+        return { ...p, feedbackCount: count };
+      });
     }
 
     return NextResponse.json({ success: true, projects: ownerProjects });

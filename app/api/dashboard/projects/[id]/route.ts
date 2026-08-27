@@ -21,6 +21,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       lookingFor,
       isPublished,
       plan,
+      vehicleId,
     } = body;
 
     let existingProject;
@@ -47,6 +48,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (status !== undefined) updates.status = status;
     if (lookingFor !== undefined) updates.lookingFor = lookingFor;
     if (isPublished !== undefined) updates.isPublished = isPublished;
+    if (vehicleId !== undefined) updates.vehicleId = vehicleId;
 
     if (plan !== undefined && plan !== existingProject.plan) {
       updates.plan = plan;
@@ -68,6 +70,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       if (status !== undefined) dbUpdates.status = status;
       if (lookingFor !== undefined) dbUpdates.lookingFor = lookingFor;
       if (isPublished !== undefined) dbUpdates.isPublished = isPublished;
+      if (vehicleId !== undefined) dbUpdates.vehicleId = vehicleId;
       if (plan !== undefined) {
         dbUpdates.plan = plan;
         dbUpdates.tileSize = getTileSize(plan).toString() + "px";

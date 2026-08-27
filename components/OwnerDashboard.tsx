@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Edit, Eye, MousePointerClick, RefreshCw, Plus, MapPin } from "lucide-react";
+import { Edit, Eye, MousePointerClick, RefreshCw, Plus, MapPin, MessageSquare } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui";
 
@@ -21,6 +21,7 @@ interface Project {
   isPublished: boolean;
   views: number;
   clicks: number;
+  feedbackCount?: number;
 }
 
 interface OwnerDashboardProps {
@@ -66,6 +67,23 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     }
   };
 
+  // Real feedback calculation based on accepted database feedback records
+  const totalFeedback = projects.reduce((acc, curr) => acc + (curr.feedbackCount || 0), 0);
+
+  const quests = [
+    { level: 1, target: 5, car: "Lada" },
+    { level: 2, target: 20, car: "Hyundai" },
+    { level: 3, target: 40, car: "BMW" },
+    { level: 4, target: 60, car: "Koenigsegg" },
+  ];
+
+  const getQuestLevel = (feedback: number) => {
+    if (feedback >= 60) return 4;
+    if (feedback >= 40) return 3;
+    if (feedback >= 20) return 2;
+    return 1;
+  };
+
   return (
     <div className="max-w-5xl mx-auto bg-card rounded-lg p-4 md:p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-border-custom pb-4 mb-6 gap-4">
@@ -86,6 +104,37 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
+        </div>
+      </div>
+
+      {/* Quests Section */}
+      <div className="mb-8 p-6 bg-zinc-900/50 border border-emerald-500/20 rounded-2xl">
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-xl font-bold text-white">Garage Quests</h3>
+          <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full uppercase font-bold tracking-wider">Level {getQuestLevel(totalFeedback)}</span>
+        </div>
+        <p className="text-sm text-zinc-400 mb-6">Earn feedback on your projects to unlock new cars in the 3D Garage.</p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          {quests.map((quest, idx) => {
+            const isCompleted = totalFeedback >= quest.target;
+            const isCurrent = totalFeedback < quest.target && (idx === 0 || totalFeedback >= quests[idx - 1].target);
+            const progress = isCompleted ? 100 : isCurrent ? ((totalFeedback - (idx > 0 ? quests[idx - 1].target : 0)) / (quest.target - (idx > 0 ? quests[idx - 1].target : 0))) * 100 : 0;
+            
+            return (
+              <div key={quest.level} className={`p-4 rounded-xl border relative overflow-hidden ${isCompleted ? 'border-emerald-500/50 bg-emerald-500/5' : isCurrent ? 'border-amber-500/50 bg-amber-500/5' : 'border-zinc-800 bg-zinc-900/50'}`}>
+                {/* Progress bar background */}
+                <div className={`absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-1000 ease-out`} style={{ width: `${progress}%` }} />
+                
+                <div className="flex justify-between items-start mb-2">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${isCompleted ? 'text-emerald-400' : isCurrent ? 'text-amber-400' : 'text-zinc-500'}`}>Level {quest.level}</span>
+                  <span className="text-xs text-zinc-500 font-mono">{totalFeedback}/{quest.target}</span>
+                </div>
+                <div className={`font-bold ${isCompleted || isCurrent ? 'text-white' : 'text-zinc-600'}`}>{quest.car}</div>
+                {isCompleted && <div className="text-[10px] text-emerald-500 mt-1 uppercase font-bold">Unlocked</div>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -129,6 +178,10 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   <div className="flex items-center gap-1.5">
                     <MousePointerClick className="h-4 w-4 text-zinc-500" />
                     <span>{project.clicks} Clicks</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="h-4 w-4 text-zinc-500" />
+                    <span>{project.feedbackCount || 0} Feedback</span>
                   </div>
                 </div>
 

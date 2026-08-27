@@ -28,6 +28,7 @@ export const projects = pgTable("projects", {
   canvasX: integer("canvas_x").notNull(),
   canvasY: integer("canvas_y").notNull(),
   tileSize: text("tile_size").notNull(),
+  vehicleId: text("vehicle_id").default("lada").notNull(),
   views: integer("views").default(0).notNull(),
   clicks: integer("clicks").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

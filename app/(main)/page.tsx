@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CanvasBoard } from "@/components/CanvasBoard";
-import { ProjectSidebar } from "@/components/ProjectSidebar";
+import { GameBoard } from "@/components/GameBoard";
+import { PhoneOverlay } from "@/components/PhoneOverlay";
 import { Button } from "@/components/ui";
 
 export default function Home() {
@@ -67,6 +67,7 @@ export default function Home() {
 
   const handleSelectProject = (project: any) => {
     setSelectedProject(project);
+    if (!project) return;
 
     const clicksStr = localStorage.getItem("buildboard_clicks") || "{}";
     const clicks = JSON.parse(clicksStr);
@@ -83,53 +84,58 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] w-full overflow-hidden relative">
-      <div className={`${selectedProject ? 'flex absolute inset-0 z-50 md:relative md:z-auto' : 'hidden md:flex'} w-full md:w-[420px] shrink-0 border-r border-border-custom bg-background flex-col justify-between overflow-y-auto`}>
-        {selectedProject ? (
-          <ProjectSidebar
-            project={selectedProject}
-            onClose={() => setSelectedProject(null)}
-          />
-        ) : (
-          <>
-            <div className="space-y-6 p-4">
-              {isLoggedIn && (
-                <div className="space-y-2">
-                  <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-500">Feedback Earnings</p>
-                    <p className="text-2xl font-extrabold mt-1">${balance}</p>
-                  </div>
-                  <p className="text-xs text-zinc-550 italic font-medium text-center">
-                    "You can only use the money you earn from the platform to create a spot."
-                  </p>
-                </div>
-              )}
-              <div className="space-y-4">
-                <p className="text-sm text-zinc-650 dark:text-zinc-350 leading-relaxed">
-                  Add your project to a visual board of people building on the internet. Get discovered, get feedback, and show what you are working on.
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new Event("open-create-modal"))}
-                  variant="outline"
-                  className="min-h-11 gap-2"
-                  aria-controls="feedback-title"
-                >
-                  Create Your Spot
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-      <div className="flex-grow relative h-full">
-        <CanvasBoard
+    <div className="h-[calc(100vh-4rem)] w-full overflow-hidden relative bg-zinc-950">
+      {/* 3D Game takes up full screen now */}
+      <div className="absolute inset-0">
+        <GameBoard
           projects={projects}
           selectedProject={selectedProject}
           onSelectProject={handleSelectProject}
           focusProject={focusProject}
         />
       </div>
+
+      {/* Floating Dashboard (Earnings & Create Spot) - Hidden when phone is open */}
+      {!selectedProject && (
+        <div className="absolute top-6 left-6 z-40 space-y-4 max-w-xs pointer-events-none">
+          {isLoggedIn && (
+            <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/80 backdrop-blur-md text-emerald-600 dark:text-emerald-400 shadow-xl pointer-events-auto">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-500">Feedback Earnings</p>
+              <h3 className="text-3xl font-black mt-1 tracking-tight">${balance}</h3>
+              <p className="text-[10px] italic opacity-80 mt-2 leading-relaxed">
+                *You can only use the money you earn from the platform to create a spot.*
+              </p>
+            </div>
+          )}
+          
+          <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-xl pointer-events-auto">
+            <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+              Add your project to a visual board of people building on the internet. Get discovered, get feedback, and show what you are working on.
+            </p>
+            <Button 
+              variant="outline" 
+              className="w-full justify-center bg-zinc-950 hover:bg-zinc-800 text-white font-medium shadow-sm transition-all"
+              onClick={() => {
+                if (isLoggedIn) {
+                  window.location.href = '/dashboard/create-spot';
+                } else {
+                  window.location.href = '/login?redirect=/dashboard/create-spot';
+                }
+              }}
+            >
+              Create Your Spot
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Phone UI Animation Overlay */}
+      {selectedProject && (
+        <PhoneOverlay 
+          project={selectedProject} 
+          onClose={() => setSelectedProject(null)} 
+        />
+      )}
     </div>
   );
 }

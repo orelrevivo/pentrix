@@ -1,0 +1,6 @@
+# Project-Scoped Rules for 3D/Canvas Board
+
+- **Always Clamp delta time in useFrame**: When building frame loops (specifically for player physics, movement, or rotation), always clamp `delta` to a maximum of `0.1` (`Math.min(delta, 0.1)`). This prevents physics/camera glitches and "teleportation" when frames drop or when the user leaves and returns to the browser tab.
+- **Use SkeletonUtils for cloning GLTFs**: When duplicating `.glb` or `.gltf` scenes that might contain bone structures or suspension rigs (like vehicles or animated structures), always import `SkeletonUtils` from `three-stdlib` and clone using `SkeletonUtils.clone(scene)`. Using standard `scene.clone()` breaks skinned meshes and detaches parts.
+- **Disable Shadows on High-Poly Models**: For models with very high triangle counts (e.g. >10MB/50MB), turn off shadow casting/receiving on their internal meshes (`node.castShadow = false`, `node.receiveShadow = false`) to prevent GPU crashes and lag spikes in WebGL.
+- **Plan-Based Vehicle Progression**: Startups in the game map display their vehicles based automatically on their spot plan level (`small`, `builder`, `featured`, `premium`). Do not add manual vehicle selectors to the edit form unless requested.
