@@ -13,15 +13,20 @@ const PLAN_PRICES: Record<string, number> = {
 
 export async function POST(req: Request) {
   try {
-    const { projectId, planType } = await req.json();
+    const { projectId, planType, couponCode } = await req.json();
 
     if (!projectId || !planType) {
       return NextResponse.json({ success: false, error: "Missing required details" }, { status: 400 });
     }
 
-    const price = PLAN_PRICES[planType.toLowerCase()];
-    if (!price) {
+    let price = PLAN_PRICES[planType.toLowerCase()];
+    if (price === undefined) {
       return NextResponse.json({ success: false, error: "Invalid plan type" }, { status: 400 });
+    }
+
+    const isCouponValid = couponCode && couponCode.toUpperCase() === "EARLYBUILDER" && planType.toLowerCase() === "small";
+    if (isCouponValid) {
+      price = 0;
     }
 
     // Find project to get ownerId
@@ -50,12 +55,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Owner not found" }, { status: 404 });
     }
 
-    const balanceNum = parseFloat(owner.balance || "0");
-    if (balanceNum < price) {
-      return NextResponse.json({ success: false, error: "Insufficient balance" }, { status: 400 });
+    let newBalance = owner.balance;
+    if (price > 0) {
+      const balanceNum = parseFloat(owner.balance || "0");
+      if (balanceNum < price) {
+        return NextResponse.json({ success: false, error: "Insufficient balance" }, { status: 400 });
+      }
+      newBalance = (balanceNum - price).toFixed(2);
     }
-
-    const newBalance = (balanceNum - price).toFixed(2);
 
     // Deduct balance and update project
     const payId = uuidv4();

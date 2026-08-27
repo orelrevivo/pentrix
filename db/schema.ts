@@ -36,7 +36,7 @@ export const projects = pgTable("projects", {
 
 export const payments = pgTable("payments", {
   id: text("id").primaryKey(),
-  projectId: text("project_id").references(() => projects.id).notNull(),
+  projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   provider: text("provider").notNull(),
   providerPaymentId: text("provider_payment_id").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
@@ -47,7 +47,7 @@ export const payments = pgTable("payments", {
 
 export const conversations = pgTable("conversations", {
   id: text("id").primaryKey(),
-  projectId: text("project_id").references(() => projects.id).notNull(),
+  projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   founderId: text("founder_id").references(() => users.id).notNull(),
   userId: text("user_id").references(() => users.id).notNull(),
   status: text("status").default("pending").notNull(),
@@ -56,7 +56,7 @@ export const conversations = pgTable("conversations", {
 
 export const messages = pgTable("messages", {
   id: text("id").primaryKey(),
-  conversationId: text("conversation_id").references(() => conversations.id).notNull(),
+  conversationId: text("conversation_id").references(() => conversations.id, { onDelete: "cascade" }).notNull(),
   senderId: text("sender_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

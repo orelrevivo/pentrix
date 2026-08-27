@@ -31,6 +31,38 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
   const [selectedPlan, setSelectedPlan] = useState("small");
   const [balance, setBalance] = useState(0);
   const [payingWithCredit, setPayingWithCredit] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState("");
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setValidatingCoupon(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: couponInput.trim(),
+          planType: selectedPlan,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAppliedCoupon(couponInput.trim());
+        setCouponInput("");
+      } else {
+        setCouponError(data.error || "Invalid coupon code");
+      }
+    } catch (e) {
+      setCouponError("Failed to validate coupon");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
 
   useEffect(() => {
     const userId = localStorage.getItem("owner_user_id");
@@ -142,7 +174,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
   };
 
   const currentPlanObj = PLANS.find((p) => p.id === selectedPlan);
-  const price = currentPlanObj ? currentPlanObj.price : 1;
+  const isCouponValid = appliedCoupon && appliedCoupon.toUpperCase() === "EARLYBUILDER" && selectedPlan === "small";
+  const price = isCouponValid ? 0 : (currentPlanObj ? currentPlanObj.price : 1);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -362,7 +395,41 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
 
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            <PlanSelector selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
+            {/* Coupon Code Input */}
+            <div className="p-4 rounded-xl border border-border-custom bg-card-muted flex flex-col sm:flex-row items-end gap-3">
+              <div className="flex-grow">
+                <Label className="mb-2 block">Coupon Code</Label>
+                <Input
+                  type="text"
+                  placeholder="Enter coupon code (e.g. EARLYBUILDER)"
+                  value={couponInput}
+                  onChange={(e) => {
+                    setCouponInput(e.target.value);
+                    setCouponError("");
+                  }}
+                  className="w-full"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleApplyCoupon}
+                disabled={validatingCoupon || !couponInput.trim()}
+                className="w-full sm:w-auto shrink-0"
+              >
+                {validatingCoupon ? "Applying..." : "Apply Coupon"}
+              </Button>
+            </div>
+            {couponError && (
+              <p className="text-xs text-rose-500 font-semibold mt-1">{couponError}</p>
+            )}
+            {appliedCoupon && (
+              <p className="text-xs text-emerald-500 font-semibold mt-1">
+                Coupon "{appliedCoupon}" applied successfully! The Small Spot is now FREE!
+              </p>
+            )}
+
+            <PlanSelector selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} couponApplied={!!appliedCoupon} />
             <div className="flex justify-between items-center pt-6 border-t border-border-custom">
               <Button variant="outline" type="button" onClick={() => setStep(1)}>
                 <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -390,6 +457,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
                 body: JSON.stringify({
                   projectId,
                   planType: selectedPlan,
+                  couponCode: appliedCoupon,
                 }),
               });
               const data = await res.json();
@@ -434,7 +502,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
                     onClick={handleCreditPayment}
                     className="w-full py-3"
                   >
-                    {payingWithCredit ? "Processing Payment..." : `Pay Entirely with Credits ($${price.toFixed(2)})`}
+                    {payingWithCredit ? "Processing Payment..." : isCouponValid ? "Claim Free Spot" : `Pay Entirely with Credits ($${price.toFixed(2)})`}
                   </Button>
                 </div>
               ) : (

@@ -48,9 +48,10 @@ export const PLANS: Plan[] = [
 interface PlanSelectorProps {
   selectedPlan: string;
   onSelectPlan: (planId: string) => void;
+  couponApplied?: boolean;
 }
 
-export const PlanSelector: React.FC<PlanSelectorProps> = ({ selectedPlan, onSelectPlan }) => {
+export const PlanSelector: React.FC<PlanSelectorProps> = ({ selectedPlan, onSelectPlan, couponApplied }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       {PLANS.map((plan) => {
@@ -73,7 +74,7 @@ export const PlanSelector: React.FC<PlanSelectorProps> = ({ selectedPlan, onSele
               </div>
               <h3 className="mt-4 text-lg font-bold text-white">{plan.name}</h3>
               <p className="mt-2 text-2xl font-extrabold text-white">
-                ${plan.price}
+                {couponApplied && plan.id === "small" ? "FREE" : `$${plan.price}`}
                 <span className="text-sm font-normal text-zinc-500"> /one-time</span>
               </p>
               <ul className="mt-4 space-y-2">
