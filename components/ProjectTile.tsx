@@ -23,7 +23,7 @@ export const ProjectTile: React.FC<ProjectTileProps> = ({ project, onClick, isSe
   const getGlowClass = (plan: string) => {
     switch (plan) {
       case "premium":
-        return "border-primary-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] hover:shadow-[0_0_30px_rgba(99,102,241,0.8)] animate-pulse";
+        return "border-primary-500 shadow-[0_0_20px_rgba(0,153,255,0.5)] hover:shadow-[0_0_30px_rgba(0,153,255,0.8)] animate-pulse";
       case "featured":
         return "border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_25px_rgba(245,158,11,0.6)]";
       case "builder":
@@ -62,7 +62,11 @@ export const ProjectTile: React.FC<ProjectTileProps> = ({ project, onClick, isSe
           className="h-10 w-10 rounded-xl object-cover shadow-inner group-hover:scale-105 transition-transform duration-200"
         />
         {size >= 100 && (
-          <span className="mt-2 text-xs font-semibold text-foreground truncate w-full px-1">
+          <span className={`mt-2 text-xs font-bold truncate w-full px-1 ${
+            project.plan === "premium"
+              ? "text-primary-500 animate-pulse drop-shadow-[0_0_4px_rgba(0,153,255,0.7)]"
+              : "text-foreground"
+          }`}>
             {project.name}
           </span>
         )}

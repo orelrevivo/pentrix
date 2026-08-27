@@ -118,33 +118,6 @@ export default function Home() {
                   Create Your Spot
                 </Button>
               </div>
-              <div id="how-it-works" className="border-t border-border-custom pt-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">How it works</h3>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Choose a plan, submit your startup details, pay via PayPal, and get placed on the interactive board.
-                </p>
-              </div>
-              <div id="pricing" className="border-t border-border-custom pt-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Pricing</h3>
-                <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                  <div className="p-2 rounded bg-card border border-border-custom text-foreground">
-                    <p className="font-bold">Small Spot</p>
-                    <p className="text-primary-500 font-extrabold">$1</p>
-                  </div>
-                  <div className="p-2 rounded bg-card border border-border-custom text-foreground">
-                    <p className="font-bold">Builder Spot</p>
-                    <p className="text-primary-500 font-extrabold">$5</p>
-                  </div>
-                  <div className="p-2 rounded bg-card border border-border-custom text-foreground">
-                    <p className="font-bold">Featured Spot</p>
-                    <p className="text-amber-500 font-extrabold">$20</p>
-                  </div>
-                  <div className="p-2 rounded bg-card border border-border-custom text-foreground">
-                    <p className="font-bold">Premium Spot</p>
-                    <p className="text-primary-600 font-extrabold">$50</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </>
         )}

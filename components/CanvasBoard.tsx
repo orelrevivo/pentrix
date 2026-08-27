@@ -126,7 +126,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleMouseUp}
-      className="relative w-full h-full overflow-hidden bg-background border-y border-t-0 border-border-custom cursor-grab active:cursor-grabbing select-none"
+      className="relative w-full h-full overflow-hidden bg-canvas-bg border-y border-t-0 border-border-custom cursor-grab active:cursor-grabbing select-none"
       id="canvas"
     >
       <div
@@ -136,7 +136,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           width: "3000px",
           height: "3000px",
         }}
-        className="absolute bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] [background-size:24px_24px] transition-transform duration-75"
+        className="absolute bg-[radial-gradient(var(--dot-color)_1.5px,transparent_1.5px)] [background-size:24px_24px] transition-transform duration-75"
       >
         <div className="absolute top-[1500px] left-[1500px] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
           <div className="w-96 h-96 rounded-full border border-primary-500/10 bg-primary-500/5 blur-3xl animate-pulse" />

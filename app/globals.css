@@ -3,10 +3,15 @@
 :root {
   --background: #171717;
   --foreground: #fafafa;
-  --card-bg: #18181b;
-  --card-muted: #18181b4d; /* zinc-900/30 equivalent roughly, or use #27272a */
+  --card-bg: #19191C;
+  --card-muted: #18181b4d;
+  /* zinc-900/30 equivalent roughly, or use #27272a */
   --card-border: #27272a;
-  --dot-color: #27272a;
+  --dot-color: #3f3f46;
+  --canvas-bg: #20201F;
+  --text-main: #fafafa;
+  --text-muted: #a1a1aa;
+  --header-bg: rgba(39, 39, 42, 0.5);
 }
 
 .light {
@@ -15,7 +20,11 @@
   --card-bg: #ffffff;
   --card-muted: #fafafa;
   --card-border: #e4e4e7;
-  --dot-color: #cbd5e1;
+  --dot-color: #94a3b8;
+  --canvas-bg: #e4e4e7;
+  --text-main: #09090b;
+  --text-muted: #71717a;
+  --header-bg: rgba(244, 244, 245, 0.8);
 }
 
 @theme {
@@ -25,6 +34,10 @@
   --color-card-muted: var(--card-muted);
   --color-border-custom: var(--card-border);
   --color-dot: var(--dot-color);
+  --color-canvas-bg: var(--canvas-bg);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-pricing-header: var(--header-bg);
   --color-primary-400: #33adff;
   --color-primary-500: #0099ff;
   --color-primary-600: #007acc;

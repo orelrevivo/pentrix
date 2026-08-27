@@ -61,3 +61,12 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const supportTickets = pgTable("support_tickets", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  email: text("email").notNull(),
+  issueType: text("issue_type").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

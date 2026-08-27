@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat, Geist } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -10,7 +10,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "BuildBoard",
+  title: "Pentrix",
   description: "Buy a spot on the live builder canvas.",
 };
 

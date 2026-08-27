@@ -15,11 +15,12 @@ class LocalDatabase {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(this.filePath, JSON.stringify({ users: [], projects: [], payments: [], conversations: [], messages: [] }, null, 2));
+      fs.writeFileSync(this.filePath, JSON.stringify({ users: [], projects: [], payments: [], conversations: [], messages: [], supportTickets: [] }, null, 2));
     }
     const data = JSON.parse(fs.readFileSync(this.filePath, "utf-8"));
     if (!data.conversations) data.conversations = [];
     if (!data.messages) data.messages = [];
+    if (!data.supportTickets) data.supportTickets = [];
     return data;
   }
 
@@ -125,6 +126,21 @@ class LocalDatabase {
         db.messages.push(msg);
         this.write(db);
         return [msg];
+      },
+    };
+  }
+
+  get supportTickets() {
+    return {
+      findMany: async (where?: (ticket: any) => boolean) => {
+        const list = this.read().supportTickets;
+        return where ? list.filter(where) : list;
+      },
+      insert: async (ticket: any) => {
+        const db = this.read();
+        db.supportTickets.push(ticket);
+        this.write(db);
+        return [ticket];
       },
     };
   }
