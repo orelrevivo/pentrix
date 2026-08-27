@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #171717;
+  --foreground: #fafafa;
+  --card-bg: #18181b;
+  --card-muted: #18181b4d; /* zinc-900/30 equivalent roughly, or use #27272a */
+  --card-border: #27272a;
+  --dot-color: #27272a;
+}
+
+.light {
+  --background: #fafafa;
+  --foreground: #09090b;
+  --card-bg: #ffffff;
+  --card-muted: #fafafa;
+  --card-border: #e4e4e7;
+  --dot-color: #cbd5e1;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card-bg);
+  --color-card-muted: var(--card-muted);
+  --color-border-custom: var(--card-border);
+  --color-dot: var(--dot-color);
+  --color-primary-400: #33adff;
+  --color-primary-500: #0099ff;
+  --color-primary-600: #007acc;
+  --color-primary-hover: #1b7aff;
+  --color-primary-border: #c0dfff;
+  --color-primary-border-hover: #b1d8ff;
+  --font-sans: var(--font-montserrat);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-montserrat), sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@keyframes jello-vertical {
+  0% {
+    transform: scale3d(1, 1, 1);
+  }
+
+  30% {
+    transform: scale3d(0.75, 1.25, 1);
+  }
+
+  40% {
+    transform: scale3d(1.25, 0.75, 1);
+  }
+
+  50% {
+    transform: scale3d(0.85, 1.15, 1);
+  }
+
+  65% {
+    transform: scale3d(1.05, 0.95, 1);
+  }
+
+  75% {
+    transform: scale3d(0.95, 1.05, 1);
+  }
+
+  100% {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+.animate-jello-vertical {
+  animation: jello-vertical 0.9s both;
+  transform-origin: left;
+}
