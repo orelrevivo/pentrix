@@ -4,6 +4,8 @@ import { projects, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { findCanvasPosition, getTileSize } from "@/lib/canvas";
 import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcryptjs";
+import { createSession } from "@/lib/session";
 
 export async function GET() {
   try {
@@ -45,19 +47,23 @@ export async function POST(req: Request) {
     }
 
     let ownerId = "";
+
     if (isLocal) {
-      let user = await localDb.users.findFirst((u) => u.email === email);
+      const user = await localDb.users.findFirst((u) => u.email === email);
       if (!user) {
         ownerId = uuidv4();
+        const passwordHash = await bcrypt.hash(password, 12);
         await localDb.users.insert({
           id: ownerId,
           email,
-          passwordHash: password,
+          passwordHash,
+          needsPasswordReset: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
       } else {
-        if (user.passwordHash !== password) {
+        const passwordValid = await bcrypt.compare(password, user.passwordHash);
+        if (!passwordValid) {
           return NextResponse.json({ success: false, error: "Incorrect password for this email" }, { status: 401 });
         }
         ownerId = user.id;
@@ -66,21 +72,24 @@ export async function POST(req: Request) {
       const existingUsers = await db.select().from(users).where(eq(users.email, email)).limit(1);
       if (existingUsers.length === 0) {
         ownerId = uuidv4();
+        const passwordHash = await bcrypt.hash(password, 12);
         await db.insert(users).values({
           id: ownerId,
           email,
-          passwordHash: password,
+          passwordHash,
+          needsPasswordReset: false,
         });
       } else {
         const user = existingUsers[0];
-        if (user.passwordHash !== password) {
+        const passwordValid = await bcrypt.compare(password, user.passwordHash);
+        if (!passwordValid) {
           return NextResponse.json({ success: false, error: "Incorrect password for this email" }, { status: 401 });
         }
         ownerId = user.id;
       }
     }
 
-    let existingProjects = [];
+    let existingProjects: any[] = [];
     if (isLocal) {
       existingProjects = await localDb.projects.findMany();
     } else if (db) {
@@ -123,6 +132,8 @@ export async function POST(req: Request) {
         updatedAt: new Date(),
       });
     }
+
+    await createSession(ownerId);
 
     return NextResponse.json({ success: true, project: newProject });
   } catch (error) {

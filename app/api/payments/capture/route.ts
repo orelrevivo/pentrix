@@ -3,9 +3,15 @@ import { db, localDb, isLocal } from "@/db/db";
 import { projects, payments, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { getSession } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
+    const userId = await getSession();
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { projectId, orderId, amount, planType } = await req.json();
 
     if (!projectId || !orderId || !amount) {
@@ -40,6 +46,10 @@ export async function POST(req: Request) {
     }
 
     if (project) {
+      if (project.ownerId !== userId) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+
       const planKey = (planType || project.plan || "small").toLowerCase();
       const planPrice = PLAN_PRICES[planKey] || 0;
       const amountPaid = parseFloat(amount.toString());

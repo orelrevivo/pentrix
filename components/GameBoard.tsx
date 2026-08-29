@@ -107,7 +107,7 @@ const PlayerControls = ({ disabled }: { disabled: boolean }) => {
 
       // Firefox requires audio to be played DIRECTLY inside a user interaction event.
       if (isMovingKey && audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().catch(err => console.log("Audio play blocked:", err));
+        audioRef.current.play().catch(() => {});
       }
     };
 

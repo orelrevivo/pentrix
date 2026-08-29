@@ -10,13 +10,17 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const id = localStorage.getItem("owner_user_id");
-    if (id) {
-      setUserId(id);
-      fetchConversations(id);
-    } else {
-      useRouter().push("/login");
-    }
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setUserId(data.userId);
+          fetchConversations(data.userId);
+        } else {
+          // We can't use useRouter().push inside useEffect easily without assigning it first
+          window.location.href = "/login";
+        }
+      });
   }, []);
 
   const fetchConversations = async (uid: string) => {
@@ -26,8 +30,7 @@ export default function MessagesPage() {
       if (data.success) {
         setConversations(data.conversations);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (_) {
     } finally {
       setLoading(false);
     }
@@ -44,8 +47,7 @@ export default function MessagesPage() {
       if (data.success) {
         fetchConversations(userId!);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (_) {
     }
   };
 

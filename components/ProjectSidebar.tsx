@@ -83,7 +83,7 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const currentUserId = typeof window !== "undefined" ? window.localStorage.getItem("owner_user_id") : null;
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const isOwner = currentUserId === project?.ownerId;
 
   const screenshots = useMemo(
@@ -121,17 +121,25 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
     setShowFeedbackForm(false);
     setHasSubmitted(false);
 
-    if (currentUserId) {
-      fetch(`/api/messages?userId=${currentUserId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.conversations) {
-            const alreadyHas = data.conversations.some((c: any) => c.projectId === project.id);
-            setHasSubmitted(alreadyHas);
-          }
-        })
-        .catch(console.error);
-    }
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          setCurrentUserId(data.userId);
+          return fetch(`/api/messages?userId=${data.userId}`);
+        }
+        return null;
+      })
+      .then((res) => {
+        if (res) return res.json();
+      })
+      .then((data) => {
+        if (data?.success && data.conversations) {
+          const alreadyHas = data.conversations.some((c: any) => c.projectId === project.id);
+          setHasSubmitted(alreadyHas);
+        }
+      })
+      .catch(() => {});
 
     const timer = window.setTimeout(() => setIsFlashActive(false), 1200);
 
@@ -191,9 +199,7 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
 
     if (!message || feedbackState === "sending") return;
 
-    const senderId = window.localStorage.getItem("owner_user_id");
-
-    if (!senderId) {
+    if (!currentUserId) {
       window.location.assign("/login");
       return;
     }
@@ -207,7 +213,7 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: project.id,
-          senderId,
+          senderId: currentUserId,
           content: message,
         }),
       });

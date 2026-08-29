@@ -31,7 +31,7 @@ export default function Home() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ type: "view" }),
-            }).catch(console.error);
+            }).catch(() => {});
           }
         }
 
@@ -39,8 +39,8 @@ export default function Home() {
           localStorage.setItem("buildboard_views", JSON.stringify(views));
         }
       }
-    } catch (error) {
-      console.error(error);
+    } catch (_) {
+
     }
   };
 
@@ -51,18 +51,21 @@ export default function Home() {
       if (data.success) {
         setBalance(data.balance);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (_) {
+
     }
   };
 
   useEffect(() => {
     fetchProjects();
-    const userId = localStorage.getItem("owner_user_id");
-    if (userId) {
-      setIsLoggedIn(true);
-      fetchBalance(userId);
-    }
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setIsLoggedIn(true);
+          fetchBalance(data.userId);
+        }
+      });
   }, []);
 
   const handleSelectProject = (project: any) => {
@@ -79,7 +82,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "click" }),
-      }).catch(console.error);
+      }).catch(() => {});
     }
   };
 

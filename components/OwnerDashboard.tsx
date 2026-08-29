@@ -40,8 +40,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       if (data.success) {
         setProjects(data.projects);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (_) {
     }
   };
 
@@ -62,8 +61,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       if (data.success && userId) {
         fetchProjects(userId);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (_) {
     }
   };
 

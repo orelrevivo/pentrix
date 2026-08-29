@@ -13,8 +13,10 @@ export const Header: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const userId = localStorage.getItem("owner_user_id");
-    setIsLoggedIn(!!userId);
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => setIsLoggedIn(data.authenticated))
+      .catch(() => setIsLoggedIn(false));
 
     const savedTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
     setTheme(savedTheme);
@@ -24,11 +26,6 @@ export const Header: React.FC = () => {
       document.documentElement.classList.remove("light");
     }
 
-    const handleStorageChange = () => {
-      setIsLoggedIn(!!localStorage.getItem("owner_user_id"));
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const handleToggleTheme = () => {
@@ -42,8 +39,8 @@ export const Header: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("owner_user_id");
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     setIsLoggedIn(false);
     router.push("/");
     setTimeout(() => window.location.reload(), 100);

@@ -15,12 +15,13 @@ class LocalDatabase {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(this.filePath, JSON.stringify({ users: [], projects: [], payments: [], conversations: [], messages: [], supportTickets: [] }, null, 2));
+      fs.writeFileSync(this.filePath, JSON.stringify({ users: [], projects: [], payments: [], conversations: [], messages: [], supportTickets: [], sessions: [] }, null, 2));
     }
     const data = JSON.parse(fs.readFileSync(this.filePath, "utf-8"));
     if (!data.conversations) data.conversations = [];
     if (!data.messages) data.messages = [];
     if (!data.supportTickets) data.supportTickets = [];
+    if (!data.sessions) data.sessions = [];
     return data;
   }
 
@@ -141,6 +142,26 @@ class LocalDatabase {
         db.supportTickets.push(ticket);
         this.write(db);
         return [ticket];
+      },
+    };
+  }
+
+  get sessions() {
+    return {
+      findFirst: async (where: (session: any) => boolean) => this.read().sessions.find(where),
+      insert: async (session: any) => {
+        const db = this.read();
+        db.sessions.push(session);
+        this.write(db);
+        return [session];
+      },
+      delete: async (where: (session: any) => boolean) => {
+        const db = this.read();
+        const initialLen = db.sessions.length;
+        db.sessions = db.sessions.filter((s: any) => !where(s));
+        if (db.sessions.length !== initialLen) {
+          this.write(db);
+        }
       },
     };
   }

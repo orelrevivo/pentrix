@@ -20,7 +20,7 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem("owner_user_id", data.user.id);
+
         router.push("/dashboard");
       } else {
         setError(data.error || "Registration failed");

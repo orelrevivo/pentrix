@@ -17,20 +17,23 @@ export default function ContactPage() {
   const [fetchingUser, setFetchingUser] = useState(false);
 
   useEffect(() => {
-    const id = localStorage.getItem("owner_user_id");
-    if (id) {
-      setUserId(id);
-      setFetchingUser(true);
-      fetch(`/api/users/profile?userId=${id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setEmail(data.email);
-          }
-        })
-        .catch(console.error)
-        .finally(() => setFetchingUser(false));
-    }
+    setFetchingUser(true);
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          setUserId(data.userId);
+          return fetch(`/api/users/profile`).then(r => r.json());
+        }
+        return { success: false };
+      })
+      .then((data) => {
+        if (data.success) {
+          setEmail(data.email);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setFetchingUser(false));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

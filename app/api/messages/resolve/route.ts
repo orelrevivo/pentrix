@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
 import { conversations, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSession } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
-    const { conversationId, action, founderId } = await req.json(); // action: 'accept' or 'reject'
+    const founderId = await getSession();
+    if (!founderId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!conversationId || !action || !founderId) {
+    const { conversationId, action } = await req.json(); // action: 'accept' or 'reject'
+
+    if (!conversationId || !action) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 

@@ -12,13 +12,16 @@ export default function EditSpotPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const id = localStorage.getItem("owner_user_id");
-    if (id) {
-      setUserId(id);
-      fetchProject(params.id as string);
-    } else {
-      router.push("/login");
-    }
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setUserId(data.userId);
+          fetchProject(params.id as string);
+        } else {
+          router.push("/login");
+        }
+      });
   }, [params.id, router]);
 
   const fetchProject = async (projectId: string) => {
@@ -29,8 +32,7 @@ export default function EditSpotPage() {
         const found = data.projects.find((p: any) => p.id === projectId);
         setProject(found);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (_) {
     } finally {
       setLoading(false);
     }

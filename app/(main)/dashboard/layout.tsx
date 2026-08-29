@@ -12,12 +12,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setIsMounted(true);
-    const id = localStorage.getItem("owner_user_id");
-    if (!id) {
-      router.push("/login");
-    } else {
-      setUserId(id);
-    }
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (!data.authenticated) {
+          router.push("/login");
+        } else {
+          setUserId(data.user_id);
+        }
+      });
   }, [router]);
 
   if (!isMounted || !userId) {

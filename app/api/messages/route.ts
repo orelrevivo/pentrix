@@ -3,14 +3,14 @@ import { db, localDb, isLocal } from "@/db/db";
 import { conversations, messages, projects } from "@/db/schema";
 import { eq, or, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { getSession } from "@/lib/session";
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
+    const userId = await getSession();
 
     if (!userId) {
-      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     let userConversations = [];
@@ -48,9 +48,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { projectId, senderId, content } = await req.json();
+    const userId = await getSession();
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!projectId || !senderId || !content) {
+    const { projectId, content } = await req.json();
+    const senderId = userId;
+
+    if (!projectId || !content) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 

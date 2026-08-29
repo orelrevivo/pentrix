@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSession } from "@/lib/session";
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
+    const userId = await getSession();
 
     if (!userId) {
-      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     let user;

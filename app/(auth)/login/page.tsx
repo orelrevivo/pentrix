@@ -12,6 +12,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -20,8 +21,12 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem("owner_user_id", data.user.id);
-        router.push("/dashboard");
+        if (data.needsPasswordReset) {
+          router.push(`/reset-password?userId=${data.userId}`);
+        } else {
+
+          router.push("/dashboard");
+        }
       } else {
         setError(data.error || "Login failed");
       }
@@ -61,7 +66,7 @@ export default function LoginPage() {
           </Button>
         </form>
         <div className="mt-4 text-center text-sm text-zinc-400">
-          Don't have an account? <a href="/register" className="text-primary-500 hover:underline">Register</a>
+          Don&apos;t have an account? <a href="/register" className="text-primary-500 hover:underline">Register</a>
         </div>
       </div>
     </div>

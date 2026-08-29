@@ -3,13 +3,14 @@ import { db, localDb, isLocal } from "@/db/db";
 import { projects, conversations } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+import { getSession } from "@/lib/session";
+
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const ownerId = searchParams.get("ownerId");
+    const ownerId = await getSession();
 
     if (!ownerId) {
-      return NextResponse.json({ success: false, error: "Missing ownerId parameter" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     let ownerProjects = [];

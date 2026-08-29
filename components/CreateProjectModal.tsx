@@ -65,17 +65,23 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
 
 
   useEffect(() => {
-    const userId = localStorage.getItem("owner_user_id");
-    if (userId) {
-      fetch(`/api/users/balance?userId=${userId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setBalance(parseFloat(data.balance));
-          }
-        })
-        .catch(console.error);
-    }
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          return fetch(`/api/users/balance`);
+        }
+        return null;
+      })
+      .then((res) => {
+        if (res) return res.json();
+      })
+      .then((data) => {
+        if (data?.success) {
+          setBalance(parseFloat(data.balance));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const getScreenshotLimit = (plan: string) => {
