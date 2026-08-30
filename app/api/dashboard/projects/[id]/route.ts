@@ -19,6 +19,8 @@ async function findOwnedProject(id: string, ownerId: string) {
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rejected = rejectCrossSiteRequest(req);
+  if (rejected) return rejected;
   const ownerId = await getSession();
   if (!ownerId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   const limited = rateLimit(req, "dashboard-project-read", 120, 60_000);

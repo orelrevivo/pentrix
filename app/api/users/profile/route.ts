@@ -3,12 +3,12 @@ import { db, localDb, isLocal } from "@/db/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/session";
-import { rateLimit } from "@/lib/security";
+import { rateLimit, rejectCrossSiteRequest } from "@/lib/security";
 
 export async function GET(req: Request) {
   try {
-    const limited = rateLimit(req, "profile-read", 120, 60_000);
-    if (limited) return limited;
+    const rejected = rejectCrossSiteRequest(req) || rateLimit(req, "profile-read", 120, 60_000);
+    if (rejected) return rejected;
     const userId = await getSession();
 
     if (!userId) {

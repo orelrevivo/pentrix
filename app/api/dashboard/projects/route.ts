@@ -4,12 +4,12 @@ import { projects, conversations } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 import { getSession } from "@/lib/session";
-import { rateLimit } from "@/lib/security";
+import { rateLimit, rejectCrossSiteRequest } from "@/lib/security";
 
 export async function GET(req: Request) {
   try {
-    const limited = rateLimit(req, "dashboard-projects-read", 120, 60_000);
-    if (limited) return limited;
+    const rejected = rejectCrossSiteRequest(req) || rateLimit(req, "dashboard-projects-read", 120, 60_000);
+    if (rejected) return rejected;
     const ownerId = await getSession();
 
     if (!ownerId) {
