@@ -49,7 +49,6 @@ export default function ContactPage() {
           email,
           issueType,
           message,
-          userId,
         }),
       });
 

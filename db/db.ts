@@ -7,7 +7,7 @@ import * as path from "path";
 const dbUrl = process.env.DATABASE_URL;
 
 class LocalDatabase {
-  private filePath = path.join(process.cwd(), "db", "local_db.json");
+  private filePath = path.join(process.cwd(), ".data", "local_db.json");
 
   private read() {
     if (!fs.existsSync(this.filePath)) {
@@ -81,6 +81,7 @@ class LocalDatabase {
   get payments() {
     return {
       findMany: async () => this.read().payments,
+      findFirst: async (where: (payment: any) => boolean) => this.read().payments.find(where),
       insert: async (pay: any) => {
         const db = this.read();
         db.payments.push(pay);

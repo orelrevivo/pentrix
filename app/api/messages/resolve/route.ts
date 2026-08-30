@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
 import { conversations, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getSession } from "@/lib/session";
+import { cleanText, rateLimit, rejectCrossSiteRequest, rejectLargeRequest } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
+    const rejected = rejectCrossSiteRequest(req) || rejectLargeRequest(req, 5_000) || rateLimit(req, "messages-resolve", 30, 60_000);
+    if (rejected) return rejected;
     const founderId = await getSession();
     if (!founderId) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { conversationId, action } = await req.json(); // action: 'accept' or 'reject'
+    const body = await req.json();
+    const conversationId = cleanText(body.conversationId, 100);
+    const action = cleanText(body.action, 10);
 
-    if (!conversationId || !action) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    if (!conversationId || (action !== "accept" && action !== "reject")) {
+      return NextResponse.json({ success: false, error: "Invalid request" }, { status: 400 });
     }
 
     let conv = null;
@@ -45,14 +50,14 @@ export async function POST(req: Request) {
         }
       }
     } else if (db) {
-      await db.update(conversations).set({ status: newStatus }).where(eq(conversations.id, conversationId));
+      const resolved = await db.update(conversations).set({ status: newStatus }).where(and(
+        eq(conversations.id, conversationId),
+        eq(conversations.founderId, founderId),
+        eq(conversations.status, "pending"),
+      )).returning({ id: conversations.id });
+      if (!resolved.length) return NextResponse.json({ success: false, error: "Feedback already resolved" }, { status: 409 });
       if (newStatus === "accepted") {
-        const uRes = await db.select().from(users).where(eq(users.id, conv.userId)).limit(1);
-        const u = uRes[0];
-        if (u) {
-          const newBalance = (parseFloat(u.balance || "0") + 0.20).toFixed(2);
-          await db.update(users).set({ balance: newBalance }).where(eq(users.id, u.id));
-        }
+        await db.update(users).set({ balance: sql`${users.balance} + 0.20` }).where(eq(users.id, conv.userId));
       }
     }
 

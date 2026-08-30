@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Required server configuration
+
+Copy `.env.example` to `.env` and configure the database, Clerk, and PayPal values. `PAYPAL_CLIENT_SECRET`, `CLERK_SECRET_KEY`, `WEBHOOK_SECRET`, and `DATABASE_URL` are server-only credentials and must never use the `NEXT_PUBLIC_` prefix. Set `PAYPAL_ENV=live` only when the matching live PayPal client ID and secret are configured; otherwise the secure default is the PayPal sandbox.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

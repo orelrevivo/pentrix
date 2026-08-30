@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
-import { projects, users } from "@/db/schema";
+import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { findCanvasPosition, getTileSize } from "@/lib/canvas";
 import { v4 as uuidv4 } from "uuid";
-import bcrypt from "bcryptjs";
-import { createSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
+import { cleanOptionalText, cleanText, isHttpUrl, rateLimit, rejectCrossSiteRequest, rejectLargeRequest } from "@/lib/security";
+
+const ALLOWED_PLANS = new Set(["small", "builder", "featured", "premium"]);
+const ALLOWED_STATUSES = new Set(["Building now", "Live", "Looking for feedback", "Looking for users", "Paused", "Not working right now"]);
+
+function toPublicProject(project: any, currentUserId: string | null) {
+  const { paymentStatus: _paymentStatus, ownerId, views: _views, clicks: _clicks, updatedAt: _updatedAt, ...publicProject } = project;
+  return { ...publicProject, isOwner: Boolean(currentUserId && ownerId === currentUserId) };
+}
 
 export async function GET() {
   try {
-    let allProjects;
+    const currentUserId = await getSession();
+    let allProjects: any[];
     if (isLocal) {
       allProjects = await localDb.projects.findMany((p) => p.isPublished === true);
     } else if (db) {
@@ -17,7 +26,7 @@ export async function GET() {
     } else {
       allProjects = [];
     }
-    return NextResponse.json({ success: true, projects: allProjects });
+    return NextResponse.json({ success: true, projects: allProjects.map((project) => toPublicProject(project, currentUserId)) });
   } catch (error) {
     return NextResponse.json({ success: false, error: "Failed to fetch projects" }, { status: 500 });
   }
@@ -25,6 +34,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const rejected = rejectCrossSiteRequest(req) || rejectLargeRequest(req, 3_000_000) || rateLimit(req, "project-create", 10, 60_000);
+    if (rejected) return rejected;
     const body = await req.json();
     const {
       name,
@@ -38,56 +49,26 @@ export async function POST(req: Request) {
       status,
       lookingFor,
       plan,
-      email,
-      password,
     } = body;
 
-    if (!name || !tagline || !description || !websiteUrl || !logoUrl || !founderName || !category || !status || !lookingFor || !plan || !email || !password) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    const validated = {
+      name: cleanText(name, 100), tagline: cleanText(tagline, 180), description: cleanText(description, 5000),
+      websiteUrl: cleanText(websiteUrl, 2048), logoUrl: cleanText(logoUrl, 2_000_000),
+      screenshotUrl: cleanOptionalText(screenshotUrl, 2_500_000), founderName: cleanText(founderName, 100),
+      category: cleanText(category, 80), status: cleanText(status, 30), lookingFor: cleanText(lookingFor, 500),
+      plan: cleanText(plan, 20),
+    };
+    if (Object.values(validated).some((value) => value === null) || !validated.websiteUrl || !isHttpUrl(validated.websiteUrl) ||
+      !validated.plan || !ALLOWED_PLANS.has(validated.plan) || !validated.status || !ALLOWED_STATUSES.has(validated.status)) {
+      return NextResponse.json({ success: false, error: "Invalid project details" }, { status: 400 });
     }
 
-    let ownerId = "";
-
-    if (isLocal) {
-      const user = await localDb.users.findFirst((u) => u.email === email);
-      if (!user) {
-        ownerId = uuidv4();
-        const passwordHash = await bcrypt.hash(password, 12);
-        await localDb.users.insert({
-          id: ownerId,
-          email,
-          passwordHash,
-          needsPasswordReset: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      } else {
-        const passwordValid = await bcrypt.compare(password, user.passwordHash);
-        if (!passwordValid) {
-          return NextResponse.json({ success: false, error: "Incorrect password for this email" }, { status: 401 });
-        }
-        ownerId = user.id;
-      }
-    } else if (db) {
-      const existingUsers = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      if (existingUsers.length === 0) {
-        ownerId = uuidv4();
-        const passwordHash = await bcrypt.hash(password, 12);
-        await db.insert(users).values({
-          id: ownerId,
-          email,
-          passwordHash,
-          needsPasswordReset: false,
-        });
-      } else {
-        const user = existingUsers[0];
-        const passwordValid = await bcrypt.compare(password, user.passwordHash);
-        if (!passwordValid) {
-          return NextResponse.json({ success: false, error: "Incorrect password for this email" }, { status: 401 });
-        }
-        ownerId = user.id;
-      }
+    const sessionUserId = await getSession();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    let ownerId = sessionUserId as string;
 
     let existingProjects: any[] = [];
     if (isLocal) {
@@ -96,24 +77,24 @@ export async function POST(req: Request) {
       existingProjects = await db.select().from(projects);
     }
 
-    const { x, y } = findCanvasPosition(plan, existingProjects);
-    const tileSize = getTileSize(plan).toString() + "px";
+    const { x, y } = findCanvasPosition(validated.plan, existingProjects);
+    const tileSize = getTileSize(validated.plan).toString() + "px";
     const projectId = uuidv4();
 
     const newProject = {
       id: projectId,
       ownerId,
-      name,
-      tagline,
-      description,
-      websiteUrl,
-      logoUrl,
-      screenshotUrl: screenshotUrl || "",
-      founderName,
-      category,
-      status,
-      lookingFor,
-      plan,
+      name: validated.name!,
+      tagline: validated.tagline!,
+      description: validated.description!,
+      websiteUrl: validated.websiteUrl,
+      logoUrl: validated.logoUrl!,
+      screenshotUrl: validated.screenshotUrl || "",
+      founderName: validated.founderName!,
+      category: validated.category!,
+      status: validated.status,
+      lookingFor: validated.lookingFor!,
+      plan: validated.plan,
       paymentStatus: "draft",
       isPublished: false,
       canvasX: x,
@@ -133,9 +114,8 @@ export async function POST(req: Request) {
       });
     }
 
-    await createSession(ownerId);
 
-    return NextResponse.json({ success: true, project: newProject });
+    return NextResponse.json({ success: true, project: toPublicProject(newProject, ownerId) });
   } catch (error) {
     return NextResponse.json({ success: false, error: "Failed to create project draft" }, { status: 500 });
   }

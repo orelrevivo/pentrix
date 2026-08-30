@@ -26,11 +26,10 @@ export default function EditSpotPage() {
 
   const fetchProject = async (projectId: string) => {
     try {
-      const res = await fetch("/api/projects");
+      const res = await fetch(`/api/dashboard/projects/${projectId}`);
       const data = await res.json();
       if (data.success) {
-        const found = data.projects.find((p: any) => p.id === projectId);
-        setProject(found);
+        setProject(data.project);
       }
     } catch (_) {
     } finally {

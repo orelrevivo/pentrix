@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sun, Moon, Menu, X } from "lucide-react";
+import { useClerk } from "@clerk/nextjs";
 import { Button } from "./ui";
 
 export const Header: React.FC = () => {
@@ -11,6 +12,7 @@ export const Header: React.FC = () => {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const { signOut } = useClerk();
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -40,10 +42,9 @@ export const Header: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await signOut();
     setIsLoggedIn(false);
     router.push("/");
-    setTimeout(() => window.location.reload(), 100);
   };
 
   return (
@@ -108,18 +109,26 @@ export const Header: React.FC = () => {
               >
                 Logout
               </button>
+              <Button onClick={() => window.dispatchEvent(new Event("open-create-modal"))}>
+                Create Your Spot
+              </Button>
             </>
           ) : (
-            <Link
-              href="/login"
-              className="text-sm font-medium text-zinc-500 hover:text-foreground transition-colors px-2 py-1.5"
-            >
-              Sign In
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-medium text-zinc-500 hover:text-foreground transition-colors px-2 py-1.5"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="text-sm font-medium text-zinc-500 hover:text-foreground transition-colors px-2 py-1.5"
+              >
+                Sign Up
+              </Link>
+            </>
           )}
-          <Button onClick={() => window.dispatchEvent(new Event("open-create-modal"))}>
-            Create Your Spot
-          </Button>
         </div>
       </div>
 
@@ -142,15 +151,30 @@ export const Header: React.FC = () => {
               >
                 Logout
               </Button>
+              <Button
+                className="w-full"
+                onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event("open-create-modal")); }}
+              >
+                Create Your Spot
+              </Button>
             </>
           ) : (
-            <Button
-              variant="ghost"
-              onClick={() => { setMobileMenuOpen(false); router.push("/login"); }}
-              className="w-full justify-start text-zinc-500 hover:text-foreground"
-            >
-              Sign In
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => { setMobileMenuOpen(false); router.push("/login"); }}
+                className="w-full justify-start text-zinc-500 hover:text-foreground"
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { setMobileMenuOpen(false); router.push("/register"); }}
+                className="w-full justify-start text-zinc-500 hover:text-foreground"
+              >
+                Sign Up
+              </Button>
+            </>
           )}
           <Button
             variant="ghost"
@@ -165,12 +189,6 @@ export const Header: React.FC = () => {
             className="w-full justify-start text-zinc-500 hover:text-foreground"
           >
             Pricing
-          </Button>
-          <Button
-            className="w-full"
-            onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event("open-create-modal")); }}
-          >
-            Create Your Spot
           </Button>
         </div>
       )}

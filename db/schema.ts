@@ -3,7 +3,7 @@ import { pgTable, text, timestamp, integer, boolean, numeric } from "drizzle-orm
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"),
   needsPasswordReset: boolean("needs_password_reset").default(false).notNull(),
   balance: numeric("balance", { precision: 10, scale: 2 }).default("0.00").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -47,7 +47,7 @@ export const payments = pgTable("payments", {
   id: text("id").primaryKey(),
   projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   provider: text("provider").notNull(),
-  providerPaymentId: text("provider_payment_id").notNull(),
+  providerPaymentId: text("provider_payment_id").notNull().unique(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").notNull(),
   status: text("status").notNull(),

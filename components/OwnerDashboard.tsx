@@ -35,7 +35,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
   const fetchProjects = async (ownerId: string) => {
     try {
-      const res = await fetch(`/api/dashboard/projects?ownerId=${ownerId}`);
+      const res = await fetch("/api/dashboard/projects");
       const data = await res.json();
       if (data.success) {
         setProjects(data.projects);

@@ -2,19 +2,27 @@ import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
 import { supportTickets } from "@/db/schema";
 import { v4 as uuidv4 } from "uuid";
+import { getSession } from "@/lib/session";
+import { cleanText, isValidEmail, rateLimit, rejectCrossSiteRequest, rejectLargeRequest } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
-    const { email, issueType, message, userId } = await req.json();
+    const rejected = rejectCrossSiteRequest(req) || rejectLargeRequest(req, 20_000) || rateLimit(req, "contact", 5, 10 * 60_000);
+    if (rejected) return rejected;
+    const { email: rawEmail, issueType: rawIssueType, message: rawMessage } = await req.json();
+    const email = cleanText(rawEmail, 254);
+    const issueType = cleanText(rawIssueType, 80);
+    const message = cleanText(rawMessage, 5000);
+    const userId = await getSession();
 
-    if (!email || !issueType || !message) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    if (!email || !isValidEmail(email) || !issueType || !message) {
+      return NextResponse.json({ success: false, error: "Invalid contact request" }, { status: 400 });
     }
 
     const ticketId = uuidv4();
     const newTicket = {
       id: ticketId,
-      userId: userId || null,
+      userId,
       email,
       issueType,
       message,

@@ -24,8 +24,6 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
     category: "SaaS",
     status: "Building now",
     lookingFor: "feedback",
-    email: "",
-    password: "",
   });
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [selectedPlan, setSelectedPlan] = useState("small");
@@ -359,31 +357,6 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose,
                   <option value="cofounder">Cofounder</option>
                   <option value="supporters">Supporters</option>
                 </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border-custom pt-4">
-              <div>
-                <Label className="mb-2 block">Owner Email</Label>
-                <Input
-                  type="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="you@domain.com"
-                />
-              </div>
-              <div>
-                <Label className="mb-2 block">Dashboard Password</Label>
-                <Input
-                  type="password"
-                  name="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                />
               </div>
             </div>
 

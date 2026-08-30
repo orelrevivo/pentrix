@@ -300,7 +300,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full h-full bg-zinc-950 overflow-hidden">
-      <Canvas shadows camera={{ position: [0, 2, 10], fov: 60 }}>
+      <Canvas shadows="percentage" camera={{ position: [0, 2, 10], fov: 60 }}>
         <React.Suspense fallback={null}>
           <Environment files="/models/horn-koppe_spring_4k.exr" background />
         </React.Suspense>

@@ -3,84 +3,98 @@ import { db, localDb, isLocal } from "@/db/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getTileSize } from "@/lib/canvas";
+import { getSession } from "@/lib/session";
+import { cleanOptionalText, cleanText, isHttpUrl, rateLimit, rejectCrossSiteRequest, rejectLargeRequest } from "@/lib/security";
+
+const PLAN_PRICES: Record<string, number> = { small: 1, builder: 5, featured: 20, premium: 50 };
+const ALLOWED_STATUSES = new Set(["Building now", "Live", "Looking for feedback", "Looking for users", "Paused", "Not working right now"]);
+
+async function findOwnedProject(id: string, ownerId: string) {
+  if (isLocal) return localDb.projects.findFirst((p) => p.id === id && p.ownerId === ownerId);
+  if (db) {
+    const result = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    return result[0]?.ownerId === ownerId ? result[0] : null;
+  }
+  return null;
+}
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ownerId = await getSession();
+  if (!ownerId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  const limited = rateLimit(req, "dashboard-project-read", 120, 60_000);
+  if (limited) return limited;
+
+  const { id } = await params;
+  const project = await findOwnedProject(id, ownerId);
+  if (!project) return NextResponse.json({ success: false, error: "Project not found" }, { status: 404 });
+  return NextResponse.json({ success: true, project });
+}
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rejected = rejectCrossSiteRequest(req) || rejectLargeRequest(req, 3_000_000) || rateLimit(req, "dashboard-project-update", 30, 60_000);
+    if (rejected) return rejected;
+
+    const ownerId = await getSession();
+    if (!ownerId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
+    const existingProject = await findOwnedProject(id, ownerId);
+    if (!existingProject) return NextResponse.json({ success: false, error: "Project not found" }, { status: 404 });
+
     const body = await req.json();
-    const {
-      name,
-      tagline,
-      description,
-      websiteUrl,
-      logoUrl,
-      screenshotUrl,
-      founderName,
-      category,
-      status,
-      lookingFor,
-      isPublished,
-      plan,
-      vehicleId,
-    } = body;
-
-    let existingProject;
-    if (isLocal) {
-      existingProject = await localDb.projects.findFirst((p) => p.id === id);
-    } else if (db) {
-      const res = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
-      existingProject = res[0] || null;
-    }
-
-    if (!existingProject) {
-      return NextResponse.json({ success: false, error: "Project not found" }, { status: 404 });
-    }
-
-    const updates: any = {};
-    if (name !== undefined) updates.name = name;
-    if (tagline !== undefined) updates.tagline = tagline;
-    if (description !== undefined) updates.description = description;
-    if (websiteUrl !== undefined) updates.websiteUrl = websiteUrl;
-    if (logoUrl !== undefined) updates.logoUrl = logoUrl;
-    if (screenshotUrl !== undefined) updates.screenshotUrl = screenshotUrl;
-    if (founderName !== undefined) updates.founderName = founderName;
-    if (category !== undefined) updates.category = category;
-    if (status !== undefined) updates.status = status;
-    if (lookingFor !== undefined) updates.lookingFor = lookingFor;
-    if (isPublished !== undefined) updates.isPublished = isPublished;
-    if (vehicleId !== undefined) updates.vehicleId = vehicleId;
-
-    if (plan !== undefined && plan !== existingProject.plan) {
-      updates.plan = plan;
-      updates.tileSize = getTileSize(plan).toString() + "px";
-    }
-
-    if (isLocal) {
-      await localDb.projects.update(id, updates);
-    } else if (db) {
-      const dbUpdates: any = {};
-      if (name !== undefined) dbUpdates.name = name;
-      if (tagline !== undefined) dbUpdates.tagline = tagline;
-      if (description !== undefined) dbUpdates.description = description;
-      if (websiteUrl !== undefined) dbUpdates.websiteUrl = websiteUrl;
-      if (logoUrl !== undefined) dbUpdates.logoUrl = logoUrl;
-      if (screenshotUrl !== undefined) dbUpdates.screenshotUrl = screenshotUrl;
-      if (founderName !== undefined) dbUpdates.founderName = founderName;
-      if (category !== undefined) dbUpdates.category = category;
-      if (status !== undefined) dbUpdates.status = status;
-      if (lookingFor !== undefined) dbUpdates.lookingFor = lookingFor;
-      if (isPublished !== undefined) dbUpdates.isPublished = isPublished;
-      if (vehicleId !== undefined) dbUpdates.vehicleId = vehicleId;
-      if (plan !== undefined) {
-        dbUpdates.plan = plan;
-        dbUpdates.tileSize = getTileSize(plan).toString() + "px";
+    const updates: Record<string, unknown> = {};
+    const textFields: Record<string, number> = {
+      name: 100, tagline: 180, description: 5000, founderName: 100,
+      category: 80, lookingFor: 500, vehicleId: 50,
+    };
+    for (const [field, maxLength] of Object.entries(textFields)) {
+      if (body[field] !== undefined) {
+        const value = cleanText(body[field], maxLength);
+        if (value === null) return NextResponse.json({ success: false, error: `Invalid ${field}` }, { status: 400 });
+        updates[field] = value;
       }
-      dbUpdates.updatedAt = new Date();
-      await db.update(projects).set(dbUpdates).where(eq(projects.id, id));
     }
+
+    if (body.status !== undefined) {
+      const status = cleanText(body.status, 30);
+      if (!status || !ALLOWED_STATUSES.has(status)) return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
+      updates.status = status;
+    }
+    if (body.websiteUrl !== undefined) {
+      const value = cleanText(body.websiteUrl, 2048);
+      if (!value || !isHttpUrl(value)) return NextResponse.json({ success: false, error: "Invalid website URL" }, { status: 400 });
+      updates.websiteUrl = value;
+    }
+    for (const field of ["logoUrl", "screenshotUrl"] as const) {
+      if (body[field] !== undefined) {
+        const value = cleanOptionalText(body[field], 2_500_000);
+        if (value === null) return NextResponse.json({ success: false, error: `Invalid ${field}` }, { status: 400 });
+        updates[field] = value;
+      }
+    }
+    if (body.isPublished !== undefined) {
+      if (typeof body.isPublished !== "boolean") return NextResponse.json({ success: false, error: "Invalid publication status" }, { status: 400 });
+      if (body.isPublished && existingProject.paymentStatus !== "paid") {
+        return NextResponse.json({ success: false, error: "Payment is required before publishing" }, { status: 403 });
+      }
+      updates.isPublished = body.isPublished;
+    }
+    if (body.plan !== undefined) {
+      const plan = cleanText(body.plan, 20);
+      if (!plan || PLAN_PRICES[plan] === undefined) return NextResponse.json({ success: false, error: "Invalid plan" }, { status: 400 });
+      if (PLAN_PRICES[plan] > (PLAN_PRICES[existingProject.plan] ?? 0)) {
+        return NextResponse.json({ success: false, error: "Plan upgrades must be completed through checkout" }, { status: 403 });
+      }
+      updates.plan = plan;
+      updates.tileSize = `${getTileSize(plan)}px`;
+    }
+
+    if (isLocal) await localDb.projects.update(id, updates);
+    else if (db) await db.update(projects).set({ ...updates, updatedAt: new Date() }).where(eq(projects.id, id));
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: "Failed to update project" }, { status: 500 });
   }
 }

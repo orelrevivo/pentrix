@@ -44,9 +44,9 @@ export default function Home() {
     }
   };
 
-  const fetchBalance = async (userId: string) => {
+  const fetchBalance = async () => {
     try {
-      const res = await fetch(`/api/users/balance?userId=${userId}`);
+      const res = await fetch("/api/users/balance");
       const data = await res.json();
       if (data.success) {
         setBalance(data.balance);
@@ -63,7 +63,7 @@ export default function Home() {
       .then(data => {
         if (data.authenticated) {
           setIsLoggedIn(true);
-          fetchBalance(data.userId);
+          fetchBalance();
         }
       });
   }, []);
@@ -99,17 +99,15 @@ export default function Home() {
       </div>
 
       {/* Floating Dashboard (Earnings & Create Spot) - Hidden when phone is open */}
-      {!selectedProject && (
+      {!selectedProject && isLoggedIn && (
         <div className="absolute top-6 left-6 z-40 space-y-4 max-w-xs pointer-events-none">
-          {isLoggedIn && (
-            <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/80 backdrop-blur-md text-emerald-600 dark:text-emerald-400 shadow-xl pointer-events-auto">
-              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-500">Feedback Earnings</p>
-              <h3 className="text-3xl font-black mt-1 tracking-tight">${balance}</h3>
-              <p className="text-[10px] italic opacity-80 mt-2 leading-relaxed">
-                *You can only use the money you earn from the platform to create a spot.*
-              </p>
-            </div>
-          )}
+          <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/80 backdrop-blur-md text-emerald-600 dark:text-emerald-400 shadow-xl pointer-events-auto">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-500">Feedback Earnings</p>
+            <h3 className="text-3xl font-black mt-1 tracking-tight">${balance}</h3>
+            <p className="text-[10px] italic opacity-80 mt-2 leading-relaxed">
+              *You can only use the money you earn from the platform to create a spot.*
+            </p>
+          </div>
           
           <div className="p-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-xl pointer-events-auto">
             <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
@@ -119,11 +117,7 @@ export default function Home() {
               variant="outline" 
               className="w-full justify-center bg-zinc-950 hover:bg-zinc-800 text-white font-medium shadow-sm transition-all"
               onClick={() => {
-                if (isLoggedIn) {
-                  window.location.href = '/dashboard/create-spot';
-                } else {
-                  window.location.href = '/login?redirect=/dashboard/create-spot';
-                }
+                window.location.href = '/dashboard/create-spot';
               }}
             >
               Create Your Spot

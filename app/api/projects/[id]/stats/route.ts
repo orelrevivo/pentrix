@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
 import { projects } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { rateLimit, rejectCrossSiteRequest, rejectLargeRequest } from "@/lib/security";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rejected = rejectCrossSiteRequest(req) || rejectLargeRequest(req, 2_000) || rateLimit(req, "project-stats", 60, 60_000);
+    if (rejected) return rejected;
     const { id } = await params;
     const { type } = await req.json();
 

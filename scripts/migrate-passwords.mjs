@@ -36,14 +36,14 @@ async function migratePasswords() {
 
     // bcrypt hashes always start with $2a$, $2b$, or $2y$ — skip already-hashed passwords
     if (hash && hash.startsWith("$2")) {
-      console.log(`  [SKIP]    ${user.email} — already hashed`);
+      console.log("  [SKIP]    Existing password hash is already secure");
       skipped++;
       continue;
     }
 
     const newHash = await bcrypt.hash(hash, 12);
     await sql`UPDATE users SET password_hash = ${newHash}, updated_at = NOW() WHERE id = ${user.id}`;
-    console.log(`  [HASHED]  ${user.email}`);
+    console.log("  [HASHED]  Migrated one user password");
     migrated++;
   }
 

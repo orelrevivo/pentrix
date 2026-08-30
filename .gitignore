@@ -24,6 +24,9 @@ lerna-debug.log*
 .env
 .env*.local
 
+# local fallback database (may contain personal and authentication data)
+/.data/
+
 # vercel
 .vercel
 

@@ -31,7 +31,7 @@ interface Project {
   lookingFor: string;
   plan: string;
   createdAt: string;
-  ownerId?: string;
+  isOwner?: boolean;
 }
 
 interface ProjectSidebarProps {
@@ -84,7 +84,7 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const isOwner = currentUserId === project?.ownerId;
+  const isOwner = Boolean(project?.isOwner);
 
   const screenshots = useMemo(
     () => parseScreenshots(project?.screenshotUrl),
@@ -126,7 +126,7 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
       .then((data) => {
         if (data.authenticated) {
           setCurrentUserId(data.userId);
-          return fetch(`/api/messages?userId=${data.userId}`);
+          return fetch("/api/messages");
         }
         return null;
       })

@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { db, localDb, isLocal } from "@/db/db";
 import { conversations, messages, projects } from "@/db/schema";
-import { eq, or, and } from "drizzle-orm";
+import { eq, or, and, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { getSession } from "@/lib/session";
+import { cleanText, rateLimit, rejectCrossSiteRequest, rejectLargeRequest } from "@/lib/security";
 
 export async function GET(req: Request) {
   try {
+    const limited = rateLimit(req, "messages-read", 120, 60_000);
+    if (limited) return limited;
     const userId = await getSession();
 
     if (!userId) {
@@ -31,7 +34,7 @@ export async function GET(req: Request) {
       const convIds = convs.map((c: any) => c.id);
       let msgs: any[] = [];
       if (convIds.length > 0) {
-        msgs = await db.select().from(messages); // Simple fetch all since it's small, or use inArray
+        msgs = await db.select().from(messages).where(inArray(messages.conversationId, convIds));
       }
       
       userConversations = convs.map((c: any) => ({
@@ -48,12 +51,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const rejected = rejectCrossSiteRequest(req) || rejectLargeRequest(req, 10_000) || rateLimit(req, "messages-send", 10, 60_000);
+    if (rejected) return rejected;
     const userId = await getSession();
     if (!userId) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { projectId, content } = await req.json();
+    const body = await req.json();
+    const projectId = cleanText(body.projectId, 100);
+    const content = cleanText(body.content, 3000);
     const senderId = userId;
 
     if (!projectId || !content) {
@@ -70,6 +77,12 @@ export async function POST(req: Request) {
 
     if (!projectFound) {
       return NextResponse.json({ success: false, error: "Project not found" }, { status: 404 });
+    }
+    if (!projectFound.isPublished) {
+      return NextResponse.json({ success: false, error: "Project is not available" }, { status: 404 });
+    }
+    if (projectFound.ownerId === senderId) {
+      return NextResponse.json({ success: false, error: "You cannot submit feedback to your own project" }, { status: 400 });
     }
 
     let convId = uuidv4();
