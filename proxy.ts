@@ -1,19 +1,38 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export default clerkMiddleware({
-  contentSecurityPolicy: {
-    directives: {
-      "script-src": ["https://*.paypal.com", "https://*.paypalobjects.com"],
-      "style-src": ["https://*.paypal.com"],
-      "connect-src": ["blob:", "https://*.paypal.com"],
-      "frame-src": ["https://*.paypal.com"],
-      "img-src": ["data:", "blob:", "https:", "https://*.paypalobjects.com"],
-      "object-src": ["'none'"],
-      "base-uri": ["'self'"],
-      "frame-ancestors": ["'none'"],
-    },
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/pricing(.*)",
+  "/contact(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/api/projects(.*)",
+  "/api/auth(.*)",
+  "/api/webhooks(.*)",
+  "/api/coupons(.*)",
+]);
+
+export default clerkMiddleware(
+  async (auth, req) => {
+    if (!isPublicRoute(req)) {
+      await auth.protect();
+    }
   },
-});
+  {
+    contentSecurityPolicy: {
+      directives: {
+        "script-src": ["https://*.paypal.com", "https://*.paypalobjects.com"],
+        "style-src": ["https://*.paypal.com"],
+        "connect-src": ["blob:", "https://*.paypal.com"],
+        "frame-src": ["https://*.paypal.com"],
+        "img-src": ["data:", "blob:", "https:", "https://*.paypalobjects.com"],
+        "object-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "frame-ancestors": ["'none'"],
+      },
+    },
+  }
+);
 
 export const config = {
   matcher: [
@@ -22,3 +41,4 @@ export const config = {
     '/__clerk/(.*)',
   ],
 };
+
