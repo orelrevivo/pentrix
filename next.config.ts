@@ -6,7 +6,7 @@ const stripeSrc = "https://*.js.stripe.com https://js.stripe.com https://hooks.s
 
 const csp = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' ${clerkSrc} ${stripeSrc} ${paypalSrc} https://maps.googleapis.com`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' ${clerkSrc} ${stripeSrc} ${paypalSrc} https://maps.googleapis.com`,
   `style-src 'self' 'unsafe-inline' ${paypalSrc}`,
   `img-src 'self' data: blob: https: ${clerkSrc}`,
   `font-src 'self' https://fonts.gstatic.com`,
